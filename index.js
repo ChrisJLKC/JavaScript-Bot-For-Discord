@@ -6,56 +6,48 @@ const token = 'TOKEN';
 
 var servers = {};
 
-const PREFIX = 1;
+const PREFIX = '!'; //adds a prefix to mak sure that the bot is being talked to.
 
-client.once('ready', () => {
+client.once('ready', () => { // notifies in console when bot is active on discord
     console.log('Ready!');
 });
 
-client.once('reconnecting', () => {
-    console.log('Reconnecting!');
-});
-
-client.once('disconnect', () => {
-    console.log('Disconnect!');
-});
-
-client.on('message', msg => {
+client.on('message', msg => { // makes sure bot is functioning in discord 
     if(msg.content === 'ping') {
         msg.reply('pong');
     }
 });
 
 client.on('message', message => {
-    let args = message.content.substring(PREFIX.length).split(' ');
+    let args = message.content.substring(PREFIX.length).split(' '); //allows a space to be placed between video link and command
 
     switch (args[0]) {
-        case 'play':
+        case 'play': // making a case variable for play
 
             function play(connection, message){
                 var server = servers[message.guild.id];
-                server.dispatcher = connnection.playStream(ytdl(server.queue[0], {filter: "audioonly"}));
+                server.dispatcher = connection.playStream(ytdl(server.queue[0], {filter: "audioonly"})); // allows to bot to download song in audio form
 
-                server.queue.shift();
+                server.queue.shift(); // moves the queue down to create another song.
 
                 server.dispatcher.on("end", function() {
                     if(server.queue[0]){
-                        play(connection, message);
+                        play(connection, message); // moving from on song to the other
                     }
 
                     else {
-                        connection.disconnect();
+                        connection.disconnect(); // disconnect for voice channel
                     }
-                })
+                });
             }
 
             if(!args[1]) {
-                message.channel.send("You need to provide a link address");
+                message.reply("You need to provide a link address"); // user issues with music on discord
                 return
             }
 
             if(!message.member.voiceChannel) {
-                message.channel.send("You need to be in a voice channel");
+                message.reply("You need to be in a voice channel");
                 return;
             }
 
@@ -63,16 +55,17 @@ client.on('message', message => {
                 queue: []
             }
 
-            var servers = servers[message.guild.id]; // Adding server to the Array of servers above 
+            var server = servers[message.guild.id]; // Adding server to the Array of servers above 
 
-            server.queue.push(args[1]);
+            server.queue.push(args[1]); // pushing new song down one on the list
 
             if(!message.guild.voiceConnection) message.member.voiceChannel.join().then(function(connection) {
-                play(connection, message);
-            })
+                play(connection, message); // makes sure member is on voice channel before working (maybe the issue)
+            });
 
         break;
-    }
-})
 
-client.login(token);
+    }
+});
+
+client.login(token); // makes sure the token works with discord
