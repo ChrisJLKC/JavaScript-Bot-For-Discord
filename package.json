@@ -9,6 +9,10 @@
   "author": "Chris",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "^12.2.0"
+    "discord.js": "^12.2.0",
+    "opusscript": "0.0.7",
+    "yt-search": "^2.1.6",
+    "ytdl-core": "^3.1.3"
   }
 }
+
