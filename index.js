@@ -66,32 +66,32 @@ client.on('message', message => {
         break;
 
         case 'skip':
-            var server = servers[message.guild.id];
+            var server = servers[message.guild.id]; //detects the server array
 
-            message.channel.send("skipping song");
-            if(server.dispatcher) server.dispatcher.end();
+            message.channel.send("skipping song"); 
+            if(server.dispatcher) server.dispatcher.end(); //goes to end of song
 
         break;
 
         case 'stop':
-            var server = servers[message.guild.id];
+            var server = servers[message.guild.id]; //detects the server array
 
             if(message.guild.voiceConnection) {
-                for(var i = server.queue.length -1; i >= 0; i--) {
+                for(var i = server.queue.length -1; i >= 0; i--) { // removing songs from queue
                     server.queue.splice(i, 1);
                 }
 
-                server.dispatcher.end();
+                server.dispatcher.end(); // goes to end of song
 
                 message.channel.send("ending song and queue of song");
                 console.log("stopped the queue");
             }
 
-            if(message.guild.connection) message.guild.voiceConnection.disconnect();
+            if(message.guild.connection) message.guild.voiceConnection.disconnect(); // disconnects from voice channel
 
         break;
 
-        case 'help':
+        case 'help': //helps user use all of the commands
             message.reply("This is the commands that you can use with the bot:");
             message.channel.send("/// !play (plays music in voice channel)");
             message.channel.send("/// !stop (stops music in voice channel");
