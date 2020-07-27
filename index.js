@@ -65,15 +65,29 @@ client.on('message', message => {
 
         break;
 
+        case 'skip':
+            var server = servers[message.guild.id];
+
+            message.channel.send("skipping song");
+            if(server.dispatcher) server.dispatcher.end();
+
+        break;
+
         case 'stop':
+            var server = servers[message.guild.id];
 
-        break;
+            if(message.guild.voiceConnection) {
+                for(var i = server.queue.length -1; i >= 0; i--) {
+                    server.queue.splice(i, 1);
+                }
 
-        case 'connect':
+                server.dispatcher.end();
 
-        break;
+                message.channel.send("ending song and queue of song");
+                console.log("stopped the queue");
+            }
 
-        case 'disconnect':
+            if(message.guild.connection) message.guild.voiceConnection.disconnect();
 
         break;
 
@@ -81,9 +95,7 @@ client.on('message', message => {
             message.reply("This is the commands that you can use with the bot:");
             message.channel.send("/// !play (plays music in voice channel)");
             message.channel.send("/// !stop (stops music in voice channel");
-            message.channel.send("/// !connect (connect to a voice channel)");
-            message.channel.send("/// !disconnect (disconnects from voice channel)");
-
+            message.channel.send("/// !skip (skippes to the nest song in the queue)");  
         break;
 
     }
