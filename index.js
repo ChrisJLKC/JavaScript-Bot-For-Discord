@@ -30,7 +30,7 @@ client.on('message', message => {
 
                 server.queue.shift(); // moves the queue down to create another song.
 
-                server.dispatcher.on("end", function() {
+                server.dispatcher.on("end", function() { // when an audio clip ends
                     if(server.queue[0]){
                         play(connection, message); // moving from on song to the other
                     }
@@ -43,7 +43,7 @@ client.on('message', message => {
 
             if(!args[1]) {
                 message.reply("You need to provide a link address"); // user issues with music on discord
-                return
+                return;
             }
 
             if(!message.member.voiceChannel) {
@@ -62,6 +62,27 @@ client.on('message', message => {
             if(!message.guild.voiceConnection) message.member.voiceChannel.join().then(function(connection) {
                 play(connection, message); // makes sure member is on voice channel before working (maybe the issue)
             });
+
+        break;
+
+        case 'stop':
+
+        break;
+
+        case 'connect':
+
+        break;
+
+        case 'disconnect':
+
+        break;
+
+        case 'help':
+            message.reply("This is the commands that you can use with the bot:");
+            message.channel.send("/// !play (plays music in voice channel)");
+            message.channel.send("/// !stop (stops music in voice channel");
+            message.channel.send("/// !connect (connect to a voice channel)");
+            message.channel.send("/// !disconnect (disconnects from voice channel)");
 
         break;
 
