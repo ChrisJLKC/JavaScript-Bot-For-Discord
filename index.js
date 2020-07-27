@@ -6,7 +6,7 @@ const token = 'TOKEN';
 
 var servers = {};
 
-const PREFIX = '!'; //adds a prefix to mak sure that the bot is being talked to.
+const PREFIX = '!'; //adds a prefix to make sure that the bot is being talked to.
 
 client.once('ready', () => { // notifies in console when bot is active on discord
     console.log('Ready!');
