@@ -1,104 +1,204 @@
-const Discord = require('discord.js');
-const client = new Discord.Client(); 
-const ytdl = require('ytdl-core');
-
-const token = 'TOKEN';
+const {MessageEmbed, Client} = require("discord.js");
+const client = new Client(); 
+const ytdl = require("ytdl-core");
+const {token, PREFIX} = require("./config.json")
 
 var servers = {};
 
-const PREFIX = '!'; //adds a prefix to make sure that the bot is being talked to.
+var queue = new Map();
 
-client.once('ready', () => { // notifies in console when bot is active on discord
+client.once("ready", () => { // notifies in console when bot is active on discord
     console.log('Ready!');
 });
 
-client.on('message', msg => { // makes sure bot is functioning in discord 
+client.on("message", msg => { // makes sure bot is functioning in discord 
     if(msg.content === 'ping') {
         msg.reply('pong');
     }
 });
 
-client.on('message', message => {
-    let args = message.content.substring(PREFIX.length).split(' '); //allows a space to be placed between video link and command
+client.on("guildMemberAdd", member => {
+    const channel_01 = member.guild.channels.cache.find(ch => ch.name === "general");
+    const embed_03 = new MessageEmbed()
+
+    .setTitle('New User!')
+    .setColor(0x9819d2)
+    .setDescription(`Welcome to the server, ${member}! Remember to stay safe!`);
+
+    if(!channel) {
+        console.log('Failed to know new member');
+        return;
+    }
+
+    channel_01.send(embed_03);
+});
+
+client.on("message", message => {
+    let args = message.content.slice(PREFIX.length).trim().split(/ +/g); // Monitors link address, and allows a space between commands
 
     switch (args[0]) {
-        case 'play': // making a case variable for play
+        case 'play':
 
-            function play(connection, message){
-                var server = servers[message.guild.id];
-                server.dispatcher = connection.playStream(ytdl(server.queue[0], {filter: "audioonly"})); // allows to bot to download song in audio form
+            if(!args[0]) { //makes sure that there is a link
 
-                server.queue.shift(); // moves the queue down to create another song.
+                const embed_04 = new MessageEmbed()
 
-                server.dispatcher.on("end", function() { // when an audio clip ends
-                    if(server.queue[0]){
-                        play(connection, message); // moving from on song to the other
-                    }
+                .setTitle('Warning!')
+                .setColor(0xbd1313)
+                .setDescription('Need a link address!');
 
-                    else {
-                        connection.disconnect(); // disconnect for voice channel
-                    }
-                });
-            }
-
-            if(!args[1]) {
-                message.reply("You need to provide a link address"); // user issues with music on discord
+                message.channel.send(embed_04);
                 return;
             }
 
-            if(!message.member.voiceChannel) {
-                message.reply("You need to be in a voice channel");
+            let url = args.splice(1).join(' '); //gets infomation for selected
+
+            if(!url.match(/(youtube.com|youtu.be)\/(watch)?(\?v=)?(\S+)?/)) { //makes sure it is a link from youtube
+
+                const embed_05 = new MessageEmbed()
+
+                .setTitle('Warning!')
+                .setColor(0xbd1313)
+                .setDescription('Please provide a valid Youtube link!');
+                
+                message.channel.send(embed_05);
+
                 return;
             }
 
-            if(!servers[message.guild.id]) servers[message.guild.id] = { // Produces a queue for songs
-                queue: []
+            let serverQueue = queue.get(message.guild.id); // starts a queue of songs
+            let vc = message.member.voice; // finding the voice channel
+
+            if(!vc) {
+
+                const embed_06 = new MessageEmbed() // when member is not in channel
+
+                .setTitle('Warning!')
+                .setColor(0xbd1313)
+                .setDescription('You are not in a voice channel!');
+
+                message.channel.send(embed_06);
+
+                return;
             }
 
-            var server = servers[message.guild.id]; // Adding server to the Array of servers above 
+            if(!vc.channel.permissionsFor(client.user).has('CONNECT') || !vc.channel.permissionsFor(client.user).has('SPEAK')) {
 
-            server.queue.push(args[1]); // pushing new song down one on the list
+                const embed_07 = new MessageEmbed() // makes sure that the bot can access the channel
 
-            if(!message.guild.voiceConnection) message.member.voiceChannel.join().then(function(connection) {
-                play(connection, message); // makes sure member is on voice channel before working (maybe the issue)
-            });
+                .setTitle('Warning!')
+                .setColor(0xbd1313)
+                .setDescription('Do not have permission to that channel!');
+                
+                message.channel.send(embed_07);
+
+                return;
+
+            }
+
+            let songinfo = ytdl.getInfo(url).then(); // getting info of video link
+            let song = { // visualising the song info
+                title: songinfo.title, 
+                url: songinfo.video_url
+            }
+
+            if(!serverQueue) {
+                let queueConst = { //determines where the message and music have to go in the server
+                    textChannel: message.channel,
+                    voiceChannel: vc.channel,
+                    connection: null,
+                    songs: [],
+                    volume: 5,
+                    playing: true
+                };
+
+                queue.set(message.guild.id, queueConst); // applying a new song
+                queueConst.songs.push(song); // pushing the queue one down to accomadate the new song
+
+                try {
+                    let connection = vc.channel.join().then(); //bot trying to connect to the voice channel
+                    queueConst.connection = connection
+                    playSong(message.guild, queueConst.songs[0]) //playing the song
+                } catch (error) {  // when detecting an error with the music
+                    console.log(error);
+                    queue.delete(message.guild.id);
+
+                    const embed_08 = new MessageEmbed()
+
+                    .setTitle('Warning!')
+                    .setColor(0xbd1313)
+                    .setDescription('There was an error playing the song! Error: ' + error);
+
+                    message.channel.send(embed_08);
+
+                    return;
+                }
+            } 
+            
+            else {
+                serverQueue.songs.push(song); // adds the song to the queue
+
+                const embed_09 = new MessageEmbed() //shwos the user the song added
+
+                .setTitle('Added!')
+                .setColor(0x1b9f31)
+                .setDescription(`${song.title} has been added to the queue!`);
+
+                message.channel.send(embed_09);
+
+                return;
+            }
 
         break;
 
         case 'skip':
-            var server = servers[message.guild.id]; //detects the server array
-
-            message.channel.send("skipping song"); 
-            if(server.dispatcher) server.dispatcher.end(); //goes to end of song
-
+      
         break;
 
         case 'stop':
-            var server = servers[message.guild.id]; //detects the server array
-
-            if(message.guild.voiceConnection) {
-                for(var i = server.queue.length -1; i >= 0; i--) { // removing songs from queue
-                    server.queue.splice(i, 1);
-                }
-
-                server.dispatcher.end(); // goes to end of song
-
-                message.channel.send("ending song and queue of song");
-                console.log("stopped the queue");
-            }
-
-            if(message.guild.connection) message.guild.voiceConnection.disconnect(); // disconnects from voice channel
 
         break;
 
         case 'help': //helps user use all of the commands
-            message.reply("This is the commands that you can use with the bot:");
-            message.channel.send("/// !play (plays music in voice channel)");
-            message.channel.send("/// !stop (stops music in voice channel");
-            message.channel.send("/// !skip (skippes to the nest song in the queue)");  
+            const embed_04 = new MessageEmbed()
+
+            .setTitle('Bot Commands')
+            .setColor(0xe18d0b)
+            .setDescription('!play (plays music in voice channel) \n !stop (stops music in voice channel) \n !skip (skippes to the nest song in the queue)');
+
+            message.channel.send(embed_04);  
+        break;
+
+        case '':
+
         break;
 
     }
 });
+
+/**
+ * 
+ * @param {Discord.Guild} guild //making sure the bot knows which one is which
+ * @param {Object} song 
+ */
+async function playSong(guild, song) { // fetches the queue of song displayed by the user
+    let serverQueue = queue.get(guild.id);
+
+    if(!song){ // if there is no more songs, it will leave
+        serverQueue.voiceChannel.leave();
+        queue.delete(guild.id);
+        return;
+    }
+
+    const dispatcher = serverQueue.connection.play(ytdl(song.url)).on('end', () => { //when the song plays in the voice channel
+        serverQueue.songs.shift();
+        playSong(guild, serverQueue.songs[0]);
+    })
+    .on('error', () => {
+        console.log(error)
+    })
+
+    dispatcher.setVolumeLogarithmic(serverQueue.volume / 5); // volume increments
+}
 
 client.login(token); // makes sure the token works with discord
