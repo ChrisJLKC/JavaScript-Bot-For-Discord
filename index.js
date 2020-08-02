@@ -4,10 +4,6 @@ const ytdl = require("ytdl-core-discord");
 const {token, PREFIX} = require("./config.json");
 const fs = require('fs');
 
-var servers = {};
-
-var queue = new Map();
-
 client.once("ready", () => { // notifies in console when bot is active on discord
     console.log('Ready!');
 });
@@ -61,6 +57,18 @@ client.on("message", async message => {
                     return;
                 }
 
+                if(!urls.match(/(youtube.com|youtu.be)\/(watch)?(\?v=)?(\S+)?/)) {
+                    embed_08 = new MessageEmbed()
+
+                    .setTitle('Warning!')
+                    .setColor(0xa71818)
+                    .setDescription('You have given an invalid YouTube link!');
+
+                    message.channel.send(embed_08);
+
+                    return;
+                }
+
                 connection.join(); //joins the voice channel
 
                 embed_06 = new MessageEmbed()
@@ -69,10 +77,11 @@ client.on("message", async message => {
                 .setColor(0x14b21f);
 
                 message.channel.send(embed_06);
+
                 
                 message.member.voice.channel.join().then(function(connect){
                     play(connect, urls); //adds conversion of url onto bot
-                });            
+                });   
                 
             }
 
@@ -89,20 +98,16 @@ client.on("message", async message => {
             }
         break;
 
-        case 'skip':
-      
-        break;
-
-        case 'pause':
-
-        break;
-
-        case 'resume':
-            
-        break;
-
-        case 'stop':
+        case 'stop': // leaves and cancels music
             connection.leave();
+
+            embed_09 = new MessageEmbed()
+
+            .setTitle('Successfully Disconnected!')
+            .setColor(0xa71818);
+
+            message.channel.send(embed_09);
+
         break;
 
         case 'help': //helps user use all of the commands
@@ -115,11 +120,13 @@ client.on("message", async message => {
             message.channel.send(embed_04);  
         break;
 
-        case '':
-
-        break;
-
     }
 });
 
 client.login(token); // makes sure the token works with discord
+
+/*
+References:
+Understanding V12 Discord JS: https://discordjs.guide/additional-info/changes-in-v12.html#voice
+Understanding how to create a music bot: https://gabrieltanner.org/blog/dicord-music-bot
+*/
